@@ -5,11 +5,25 @@ import ConfigParser
 import datetime
 import os
 
+
 def createdirifnotexists(directory):
     if not os.path.exists(directory):
         os.makedirs(directory)
 
-def loggingobject(args, logging):
+def yesnoquestion(string):
+    while True:
+        response = raw_input("%s [Y/n]" % (string)).lower()
+        while response not in ("yes", "no", "y", "n"):
+            response = raw_input("%s [Y/n]" % (string)).lower()
+        if response == "no" or response == "n":
+            return False
+            break
+        if response == "yes" or response == "y":
+            return True
+            break
+
+
+def loggingobject(args):
     #creates the logging object
     createdirifnotexists(args.log)
     filename = "%s/%s" % (args.log, args.logname)
@@ -25,11 +39,29 @@ def loggingobject(args, logging):
     logging.getLogger('').addHandler(console)
     return logging
 
+
+def configparserrenamesection(cp, section_from, section_to):
+    items = cp.items(section_from)
+    cp.add_section(section_to)
+    for item in items:
+        cp.set(section_to, item[0], item[1])
+    cp.remove_section(section_from)
+
 def initalsetup():
+
+    awsresponse = False
+
     parser = argparse.ArgumentParser(description='This is fluffy, I try to automate Cloud auditing elemetns'
                                                  'so you can get on with more interesting things')
 
+    #check for pre existing aws creds
+    awsconfig = os.path.expanduser('~') + '/.aws/credentials'
+    if os.path.isfile(awsconfig) and os.access(awsconfig, os.R_OK):
+        awsresponse = yesnoquestion("[A] AWS credential folder found, would you like me to look here for credentials?")
+
     parser.add_argument('--cfg', '-c', help="Where is the config file?", required=True)
+
+
     parser.add_argument('--log', '-l', help="any log dir? defaults to logs",
                         required=False, default='logs')
 
@@ -40,9 +72,19 @@ def initalsetup():
     #logging to file and screen
 
 
-    config = ConfigParser.ConfigParser()
-    config.read([os.path.expanduser(args.cfg)])
+    config = ConfigParser.SafeConfigParser()
+
+    #should only be true, if above check as returned so.
+    if awsresponse:
+        config.read([os.path.expanduser(args.cfg)])
+        config.read(['/Users/adz/.aws/credentials'])
+        configparserrenamesection(config, 'default', 'awscredentials')
+
+    else:
+        config.read([os.path.expanduser(args.cfg)])
+
 
     logging = loggingobject(args)
 
     return logging, args, config
+

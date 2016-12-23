@@ -1,1 +1,8 @@
 azure==2.0.0rc6
+msrest
+msrestazure
+adal
+boto3
+pytz
+beeprint
+Jinja2
