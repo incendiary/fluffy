@@ -22,22 +22,30 @@ def yesnoquestion(string):
             return True
             break
 
+def get_list_from_config_parser(option, sep=',', chars=None):
+    """Return a list from a ConfigParser option. By default,
+       split on a comma and strip whitespaces."""
+    return [ chunk.strip(chars) for chunk in option.split(sep) ]
+
 
 def loggingobject(args):
     #creates the logging object
     createdirifnotexists(args.log)
     filename = "%s/%s" % (args.log, args.logname)
+
     logging.basicConfig(level=logging.DEBUG,
                     format='%(asctime)s %(name)-12s %(levelname)-8s %(message)s',
                     datefmt='%m-%d %H:%M',
                     filename=filename,
                     filemode='w')
+
     console = logging.StreamHandler()
     console.setLevel(logging.INFO)
     formatter = logging.Formatter('%(name)-12s: %(levelname)-8s %(message)s')
     console.setFormatter(formatter)
     logging.getLogger('').addHandler(console)
     return logging
+
 
 
 def configparserrenamesection(cp, section_from, section_to):
@@ -48,8 +56,6 @@ def configparserrenamesection(cp, section_from, section_to):
     cp.remove_section(section_from)
 
 def initalsetup():
-
-    awsresponse = False
 
     parser = argparse.ArgumentParser(description='This is fluffy, I try to automate Cloud auditing elemetns'
                                                  'so you can get on with more interesting things')

@@ -1,0 +1,16 @@
+<table id="{{ id }}" class="display" cellspacing="0" width="100%">
+    <thead>
+    {% for header in headings %}
+        <th>{{ header }}</th>
+    {% endfor %}
+    </thead>
+    <tbody>
+        {{ tablecontents }}
+    </tbody>
+    <tfoot>
+    {% for header in headings %}
+        <th>{{ header }}</th>
+    {% endfor %}
+    </tfoot>
+
+</table>
