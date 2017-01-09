@@ -6,10 +6,22 @@
   <title>{{ title }}</title>
   <meta name="description" content="{{ description }}" />
 
-    <link rel="stylesheet" href="https://cdn.datatables.net/1.10.13/css/jquery.dataTables.min.css">
-    <script type="text/javascript" language="javascript" src="https://code.jquery.com/jquery-1.12.4.js"> </script>
-    <script type="text/javascript" language="javascript" src="https://cdn.datatables.net/1.10.13/js/jquery.dataTables.min.js"> </script>
+    <!-- Site Style -->
+
+    <!-- Jquery -->
+    <script type="text/javascript" language="javascript" src="js/jquery-1.12.4.js"> </script>
+
+    <!-- DataTables -->
+    <link rel="stylesheet" href="css/jquery.dataTables.min.css">
+    <script type="text/javascript" language="javascript" src="js/jquery.dataTables.min.js"> </script>
     <script type="text/javascript" language="javascript" src="js/datatable.js"> </script>
+
+    <!-- tooltip -->
+    <script>
+	  $( function() {
+	    $( document ).tooltip();
+	  } );
+    </script>
 
 </head>
 
@@ -18,11 +30,17 @@
 <img src="images/103556-despicable-me-its-so-fluffy-gi-Uv1z.gif" />
 
 <div id="content">
-  <p>Keys found:</p>
+    <div id="keycontent">
+      <h3>Keys found:</h3>
+        {{ keytablecontents }}
+    </div>
 
-{{ keytablecontents }}
 
 
+    <div id="usercontent">
+      <h3>Users found:</h3>
+        {{ inlineusers }}
+    </div>
 </div>
 
 </body>

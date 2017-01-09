@@ -4,7 +4,7 @@ import getpass
 import sys
 from beeprint import pp
 from azure.common.credentials import ServicePrincipalCredentials
-from Classes.user import User, Api_access_key
+from Classes.user import Aws_user, Api_access_key
 import pytz
 from datetime import datetime, timedelta
 import boto3
@@ -18,6 +18,9 @@ def comparetwodates(date1, date2, deltainseconds):
     else:
         return False
 
+def report_inline_user():
+    pass
+
 def createreport(userlist):
 
     cwd = os.getcwd()
@@ -27,6 +30,7 @@ def createreport(userlist):
     maintemplate = templateEnv.get_template(templatedir + "/main.jinja")
     keytemplate = templateEnv.get_template(templatedir + "/key.jinja")
     tabletemplate  = templateEnv.get_template(templatedir + "/table.jinja")
+    inlineusertemplate = templateEnv.get_template(templatedir + "/inlineuser.jinja")
 
     keytablecontent = ""
     for auser in userlist:
@@ -35,20 +39,34 @@ def createreport(userlist):
             keytablecontent += keytemplate.render(templateVars)
 
     keyheadings = ["Name", "Creation", "ID", "Unused", "LastUsedTooLong", "KeyTooOld"]
-    tableid = "keys"
+
     keytabletemplateVars = {"headings": keyheadings,
                     "tablecontents": keytablecontent,
-                    "id": tableid,
+                    "id": "keys",
                         }
 
     keytablecontent = tabletemplate.render(keytabletemplateVars)
 
+    #table for inline policy users
+    inlineusers = ""
+    for auser in userlist:
+        if auser.inline_enabled:
+            inlinetemplatevars  = {"name": auser.username,
+                "inline_policy_list": auser.inline_policy_list,
+                }
+
+            inlineusers += inlineusertemplate.render(inlinetemplatevars)
+
+    inlineusers = "<ul>%s</ul>" % inlineusers
+
+
     maintemplateVars = {"title": "Fluffy Output",
                     "description": "Hopefully simple output",
-                    "keytablecontents": keytablecontent
+                    "keytablecontents": keytablecontent,
+                    "inlineusers": inlineusers,
                     }
 
-    with open("output.html", "wb") as fh:
+    with open("Output/index.html", "wb") as fh:
         fh.write(maintemplate.render(maintemplateVars))
 
 
@@ -57,22 +75,24 @@ if __name__ == "__main__":
     utc = pytz.UTC
     current = datetime.now()
     current_utc = pytz.utc.localize(current)
+    known_aws_admin_policies = get_list_from_config_parser(config.get('aws', 'known_aws_admin_policies'))
+    known_aws_admin_groups = get_list_from_config_parser(config.get('aws', 'known_aws_admin_groups'))
+    last_key_used_delta = config.getint('apikeys', 'lastused')
+    longest_key_unused_delta = config.getint('apikeys', 'unused')
+    userlist = []
 
     client = boto3.client(
         'iam',
         aws_access_key_id=config._sections['awscredentials']['aws_access_key_id'],
         aws_secret_access_key=config._sections['awscredentials']['aws_secret_access_key'],
     )
-
-    userlist = []
     users = client.list_users()
-    known_aws_admin_policies = get_list_from_config_parser(config.get('aws', 'knownadminpolicies'))
-    print known_aws_admin_policies
-    exit()
+
     for user in users['Users']:
-        thisuser = User(user['UserName'])
+        #pp("===========================\n\n\n")
+        thisuser = Aws_user(user['UserName'])
 
-
+        ###MFA Section####
         response_list_mfa = client.list_mfa_devices(
             UserName=user['UserName'],
         )
@@ -83,9 +103,19 @@ if __name__ == "__main__":
         elif len(response_list_mfa['MFADevices']) >= 1:
             thisuser.set_mfa_enabled(True)
 
+        #######
+
         response_list_groups_for_user = client.list_groups_for_user(
             UserName=user['UserName'],
         )
+
+        if response_list_groups_for_user >0:
+            thisuser.group_membership_enabled = True
+            for group in response_list_groups_for_user['Groups']:
+                thisuser.append_group(group)
+
+
+        ###Inline policy section####
         response_inline_policies_for_user = client.list_attached_user_policies(
             UserName=user['UserName'],
         )
@@ -95,8 +125,7 @@ if __name__ == "__main__":
             for policy in response_inline_policies_for_user['AttachedPolicies']:
                 thisuser.append_inline_policy(policy)
 
-        if thisuser.inline_enabled:
-            print thisuser.inline_policy_list
+        ###Access Key Section####
 
         response_list_access_keys = client.list_access_keys(
             UserName=user['UserName'],
@@ -120,23 +149,24 @@ if __name__ == "__main__":
                     else:
                         thisapikey.set_create_date(createdate, False)
 
-                    #do I want to move these checks into the class itself?
+                    #do I want to move these checks into the class itself? Perhaps its best on insertion
                     if 'LastUsedDate' in access_key_last_used_dict:
                         access_key_last_used_date =  access_key_last_used_dict['LastUsedDate']
-                        if comparetwodates(current_utc, access_key_last_used_date, config.getint('apikeys', 'lastused')):
+                        if comparetwodates(current_utc, access_key_last_used_date, last_key_used_delta):
                             thisapikey.set_last_used(access_key_last_used_date=access_key_last_used_date,
                                                      api_access_key_last_used_too_long=True)
                         else:
                             thisapikey.set_last_used(access_key_last_used_date=access_key_last_used_date,
                                                      api_access_key_last_used_too_long=False)
                     else:
-                        if comparetwodates(current_utc, createdate, config.getint('apikeys', 'unused')):
+                        if comparetwodates(current_utc, createdate, longest_key_unused_delta):
                             thisapikey.set_unused()
                     thisuser.appended_api_access_key(thisapikey)
 
 
-
-
+        thisuser.do_aws_checks(known_aws_admin_policies, known_aws_admin_groups)
+        #pp(thisuser)
 
         userlist.append(thisuser)
-    #createreport(userlist)
+
+    createreport(userlist)

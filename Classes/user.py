@@ -41,12 +41,19 @@ class Api_access_key(object):
         self.createselfdict()
         return json.dumps(self.dict)
 
+
+
+
 class User(object):
     def __init__(self, username):
         self.username = username
         self.api_access_keys_list = []
         self.inline_enabled = False
         self.mfa_enabled = False
+        self.administrative = False
+        self.group_membership_enabled = False
+        self.administrative_not_mfa = False
+        self.groups = []
 
     def appended_api_access_key(self, key):
         self.api_access_keys_list.append(key)
@@ -63,6 +70,14 @@ class User(object):
     def set_mfa_enabled(self, state):
         self.mfa_enabled = state
 
+    def do_checks(self):
+        #tempory list of checks
+        # password and key aging
+        # 2fa on critical accounts
+        pass
+
+class Aws_user(User):
+
     def set_inline_enabled(self, state):
         #Maybe aws specific
         self.inline_enabled = state
@@ -70,3 +85,27 @@ class User(object):
 
     def append_inline_policy(self, policy):
         self.inline_policy_list.append(policy)
+
+    def append_group(self, group):
+        self.groups.append(group)
+
+    def do_aws_checks(self, known_aws_admin_policies, known_aws_admin_groups):
+        # known_aws_admin_policies & known_aws_admin_groups both come via the config file.
+
+        # Inline Policy Check
+        if self.inline_enabled:
+            for policy in self.inline_policy_list:
+                if policy['PolicyName'] in known_aws_admin_policies:
+                    self.administrative = True
+
+        # Group membership Check
+        if self.group_membership_enabled:
+            for group in self.groups:
+                if group['GroupName'] in ['Administrators', 'Admin']:
+                    self.administrative = True
+                if group['GroupName'] in known_aws_admin_groups:
+                    self.administrative = True
+
+        if self.administrative:
+            if not self.mfa_enabled:
+                self.administrative_not_mfa = True
