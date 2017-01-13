@@ -1,0 +1,11 @@
+<p title="{% for policy in inline_policy_list %}||{{ policy['PolicyName'] }} = {{ policy['PolicyArn'] }} {% endfor %}"
+id="{{ name }}-profile" class="profilelist" style="display:block;
+width:119px;
+height:141px;
+background-size:cover;
+background-repeat: no-repeat;
+{% if administrative %}
+border: 2px solid red;
+{% endif %}
+background-image: url(data:image/png;base64,{{image}});" >{{ name }}</p>
+
