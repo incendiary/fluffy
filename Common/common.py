@@ -48,12 +48,14 @@ def loggingobject(args):
 
 
 
-def configparserrenamesection(cp, section_from, section_to):
-    items = cp.items(section_from)
-    cp.add_section(section_to)
+def config_parser_rename_section(config, section_from, section_to, destructive=False):
+    if destructive:
+        config.remove_section(section_to)
+    items = config.items(section_from)
+    config.add_section(section_to)
     for item in items:
-        cp.set(section_to, item[0], item[1])
-    cp.remove_section(section_from)
+        config.set(section_to, item[0], item[1])
+    config.remove_section(section_from)
 
 def initalsetup():
 
@@ -84,11 +86,10 @@ def initalsetup():
     if awsresponse:
         config.read([os.path.expanduser(args.cfg)])
         config.read(['/Users/adz/.aws/credentials'])
-        configparserrenamesection(config, 'default', 'awscredentials')
+        config_parser_rename_section(config, 'default', 'awscredentials', destructive=True)
 
     else:
         config.read([os.path.expanduser(args.cfg)])
-
 
     logging = loggingobject(args)
 

@@ -1,4 +1,7 @@
 import json
+import random
+import os
+import base64
 
 class Api_access_key(object):
 
@@ -22,7 +25,8 @@ class Api_access_key(object):
 
 
     def set_unused(self):
-        self.api_access_key_unused = True
+        #logic is, if the access key is unused, then the last time it was used is to long by default.
+        self.api_access_key_last_used_too_long, self.api_access_key_unused = True
 
     def createselfdict(self):
         self.dict = {'user': self.user,
@@ -45,7 +49,7 @@ class Api_access_key(object):
 
 
 class User(object):
-    def __init__(self, username):
+    def __init__(self, username, avatar=False):
         self.username = username
         self.api_access_keys_list = []
         self.inline_enabled = False
@@ -54,27 +58,71 @@ class User(object):
         self.group_membership_enabled = False
         self.administrative_not_mfa = False
         self.groups = []
+        self.last_used = None
+        self.create_date = None
+        self.service_account = None
+
+        if not avatar:
+            #no avatar passed, setting random one
+            avatar_directory = "imgs/avatars/"
+            with open(avatar_directory + random.choice(os.listdir(avatar_directory)), "rb") as image_file:
+                data = image_file.read()
+                self.avatar = data.encode("base64").replace('\n', '')
+
+    def set_last_used(self, date):
+        #used to store the last time an account was used, seperate to key usage if supproted.
+        self.last_used = date
+
+    def return_last_used(self):
+        return self.last_used
+
+    def set_create_date(self, createdate):
+        self.create_date = createdate
+
+    def return_create_date(self):
+        return self.create_date
+
+    def set_user_id(self, id):
+        self.user_id = id
+
+    def return_user_id(self):
+        return self.user_id
 
     def appended_api_access_key(self, key):
+        #append api access key objects to the api access key list
         self.api_access_keys_list.append(key)
 
     def return_api_access_keys_list(self):
+        #returns api acces key lists
         return self.api_access_keys_list
 
     def return_api_access_keys_json(self):
+        #attempts to return keys as json
         list = []
         for key in self.api_access_keys_list:
             list.append(key.returnjsonkey())
         return list
 
+    def set_service_account(self, state):
+        self.service_account = state
+
+    def return_service_account(self):
+        return self.service_account
+
     def set_mfa_enabled(self, state):
         self.mfa_enabled = state
+
+    def user_can_login(self, login):
+        #used to store if a user can login or if its just api access.
+        self.can_login =  login
 
     def do_checks(self):
         #tempory list of checks
         # password and key aging
         # 2fa on critical accounts
         pass
+
+
 
 class Aws_user(User):
 
@@ -88,6 +136,14 @@ class Aws_user(User):
 
     def append_group(self, group):
         self.groups.append(group)
+
+    def set_arn(self, arn):
+        self.arn = arn
+
+    def return_arn(self):
+        return self.arn
+
+
 
     def do_aws_checks(self, known_aws_admin_policies, known_aws_admin_groups):
         # known_aws_admin_policies & known_aws_admin_groups both come via the config file.
