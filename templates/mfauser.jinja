@@ -1,5 +1,4 @@
-<p title="{% for policy in inline_policy_list %}||{{ policy['PolicyName'] }} = {{ policy['PolicyArn'] }} {% endfor %}"
-id="{{ name }}-profile" class="profilelist" style="display:block;
+<p title="{% if administrative %}Administrative User{% endif %}" id="{{ name }}-profile" class="profilelist" style="display:block;
 width:119px;
 height:141px;
 background-size:cover;
