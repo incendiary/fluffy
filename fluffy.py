@@ -31,6 +31,7 @@ def createreport(userlist):
     keytemplate = templateEnv.get_template(templatedir + "/key.jinja")
     tabletemplate  = templateEnv.get_template(templatedir + "/table.jinja")
     inlineusertemplate = templateEnv.get_template(templatedir + "/inlineuser.jinja")
+    nonmfausaaerstemplate = templateEnv.get_template(templatedir + "/mfauser.jinja")
 
     keytablecontent = ""
     for auser in userlist:
@@ -53,17 +54,27 @@ def createreport(userlist):
         if auser.inline_enabled:
             inlinetemplatevars  = {"name": auser.username,
                 "inline_policy_list": auser.inline_policy_list,
+                "image": auser.avatar,
+                "administrative": auser.administrative
                 }
 
             inlineusers += inlineusertemplate.render(inlinetemplatevars)
 
-    inlineusers = "<ul>%s</ul>" % inlineusers
+    nonmfausers = ""
+    for auser in userlist:
+        if not auser.service_account:
+            inlinetemplatevars  = {"name": auser.username,
+                "image": auser.avatar,
+                "administrative": auser.administrative
+                }
+            nonmfausers += nonmfausaaerstemplate.render(inlinetemplatevars)
 
 
     maintemplateVars = {"title": "Fluffy Output",
                     "description": "Hopefully simple output",
                     "keytablecontents": keytablecontent,
                     "inlineusers": inlineusers,
+                    "nonmfausers": nonmfausers,
                     }
 
     with open("Output/index.html", "wb") as fh:
@@ -79,6 +90,10 @@ if __name__ == "__main__":
     known_aws_admin_groups = get_list_from_config_parser(config.get('aws', 'known_aws_admin_groups'))
     last_key_used_delta = config.getint('apikeys', 'lastused')
     longest_key_unused_delta = config.getint('apikeys', 'unused')
+
+    print config._sections
+    print config._sections['awscredentials']['aws_secret_access_key']
+    exit()
     userlist = []
 
     client = boto3.client(
@@ -89,6 +104,8 @@ if __name__ == "__main__":
     users = client.list_users()
 
     for user in users['Users']:
+
+
         #pp("===========================\n\n\n")
         thisuser = Aws_user(user['UserName'])
 
@@ -113,6 +130,28 @@ if __name__ == "__main__":
             thisuser.group_membership_enabled = True
             for group in response_list_groups_for_user['Groups']:
                 thisuser.append_group(group)
+
+        #user checks
+
+
+        iam = boto3.resource('iam')
+        response_specific_user = iam.User(user['UserName'])
+
+        thisuser.set_create_date(response_specific_user.create_date)
+        thisuser.set_arn(response_specific_user.arn)
+        thisuser.set_user_id(response_specific_user.user_id)
+        thisuser.set_last_used(response_specific_user.password_last_used)
+
+        # https://gist.github.com/jonathanwcrane/68ddff397ec85a8dddae
+
+        profile = response_specific_user.LoginProfile()
+        try:
+            profile.load()
+        except Exception as e:
+            if 'NoSuchEntity' in e.response['Error']['Code']:
+                thisuser.set_service_account(True)
+            else:
+                thisuser.set_service_account(False)
 
 
         ###Inline policy section####
@@ -165,7 +204,7 @@ if __name__ == "__main__":
 
 
         thisuser.do_aws_checks(known_aws_admin_policies, known_aws_admin_groups)
-        #pp(thisuser)
+       # pp(thisuser)
 
         userlist.append(thisuser)
 
