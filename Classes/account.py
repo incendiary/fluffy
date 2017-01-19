@@ -26,7 +26,8 @@ class Api_access_key(object):
 
     def set_unused(self):
         #logic is, if the access key is unused, then the last time it was used is to long by default.
-        self.api_access_key_last_used_too_long, self.api_access_key_unused = True
+        self.api_access_key_last_used_too_long = True
+        self.api_access_key_unused = True
 
     def createselfdict(self):
         self.dict = {'user': self.user,
@@ -48,7 +49,7 @@ class Api_access_key(object):
 
 
 
-class User(object):
+class Account(object):
     def __init__(self, username, avatar=False):
         self.username = username
         self.api_access_keys_list = []
@@ -124,7 +125,7 @@ class User(object):
 
 
 
-class Aws_user(User):
+class Aws_account(Account):
 
     def set_inline_enabled(self, state):
         #Maybe aws specific

@@ -4,7 +4,7 @@ import getpass
 import sys
 from beeprint import pp
 from azure.common.credentials import ServicePrincipalCredentials
-from Classes.user import Aws_user, Api_access_key
+from Classes.account import Aws_account, Api_access_key
 import pytz
 from datetime import datetime, timedelta
 import boto3
@@ -91,9 +91,6 @@ if __name__ == "__main__":
     last_key_used_delta = config.getint('apikeys', 'lastused')
     longest_key_unused_delta = config.getint('apikeys', 'unused')
 
-    print config._sections
-    print config._sections['awscredentials']['aws_secret_access_key']
-    exit()
     userlist = []
 
     client = boto3.client(
@@ -107,7 +104,7 @@ if __name__ == "__main__":
 
 
         #pp("===========================\n\n\n")
-        thisuser = Aws_user(user['UserName'])
+        thisuser = Aws_account(user['UserName'])
 
         ###MFA Section####
         response_list_mfa = client.list_mfa_devices(
@@ -204,7 +201,10 @@ if __name__ == "__main__":
 
 
         thisuser.do_aws_checks(known_aws_admin_policies, known_aws_admin_groups)
-       # pp(thisuser)
+        pp(thisuser)
+        for key in thisuser.return_api_access_keys_list():
+            pp(key)
+
 
         userlist.append(thisuser)
 
