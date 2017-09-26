@@ -3,7 +3,7 @@ import random
 import os
 import base64
 
-class Api_access_key(object):
+class ApiAccessKey(object):
 
     def __init__(self, keydescriptor, createdate, user):
         self.api_access_key = keydescriptor
@@ -47,13 +47,15 @@ class Api_access_key(object):
         return json.dumps(self.dict)
 
 
-
-
 class Account(object):
     def __init__(self, username, avatar=False):
+        # Username of account
         self.username = username
+        # API keys associated with account
         self.api_access_keys_list = []
+        # Inline Policies used by AWS - Maybe Azure equivalent? TBC
         self.inline_enabled = False
+        # does the account have MFA enabled
         self.mfa_enabled = False
         self.administrative = False
         self.group_membership_enabled = False
@@ -125,7 +127,7 @@ class Account(object):
 
 
 
-class Aws_account(Account):
+class AwsAccount(Account):
 
     def set_inline_enabled(self, state):
         #Maybe aws specific
@@ -166,3 +168,11 @@ class Aws_account(Account):
         if self.administrative:
             if not self.mfa_enabled:
                 self.administrative_not_mfa = True
+
+
+class AzureAccount(Account):
+
+    def __init__(self, args, config, logging):
+        self.args = args
+        self.config = config
+        self.logging = logging
