@@ -19,6 +19,7 @@ class ApiAccessKey(object):
         self.api_access_key_create_date = createdate
         self.api_key_too_old = tooold
 
+
     def set_last_used(self, access_key_last_used_date, api_access_key_last_used_too_long):
         self.api_access_key_last_used = access_key_last_used_date
         self.api_access_key_last_used_too_long = api_access_key_last_used_too_long
@@ -29,6 +30,7 @@ class ApiAccessKey(object):
         self.api_access_key_last_used_too_long = True
         self.api_access_key_unused = True
 
+
     def createselfdict(self):
         self.dict = {'user': self.user,
                      'api_access_key': self.api_access_key,
@@ -38,9 +40,11 @@ class ApiAccessKey(object):
                      'api_key_too_old': self.api_key_too_old
                      }
 
+
     def returndictkey(self):
         self.createselfdict()
         return self.dict
+
 
     def returnjsonkey(self):
         self.createselfdict()
@@ -72,32 +76,41 @@ class Account(object):
                 data = image_file.read()
                 self.avatar = data.encode("base64").replace('\n', '')
 
+
     def set_last_used(self, date):
         #used to store the last time an account was used, seperate to key usage if supproted.
         self.last_used = date
 
+
     def return_last_used(self):
         return self.last_used
+
 
     def set_create_date(self, createdate):
         self.create_date = createdate
 
+
     def return_create_date(self):
         return self.create_date
+
 
     def set_user_id(self, id):
         self.user_id = id
 
+
     def return_user_id(self):
         return self.user_id
+
 
     def appended_api_access_key(self, key):
         #append api access key objects to the api access key list
         self.api_access_keys_list.append(key)
 
+
     def return_api_access_keys_list(self):
         #returns api acces key lists
         return self.api_access_keys_list
+
 
     def return_api_access_keys_json(self):
         #attempts to return keys as json
@@ -106,18 +119,23 @@ class Account(object):
             list.append(key.returnjsonkey())
         return list
 
+
     def set_service_account(self, state):
         self.service_account = state
+
 
     def return_service_account(self):
         return self.service_account
 
+
     def set_mfa_enabled(self, state):
         self.mfa_enabled = state
+
 
     def user_can_login(self, login):
         #used to store if a user can login or if its just api access.
         self.can_login =  login
+
 
     def do_checks(self):
         #tempory list of checks
@@ -134,18 +152,21 @@ class AwsAccount(Account):
         self.inline_enabled = state
         self.inline_policy_list = []
 
+
     def append_inline_policy(self, policy):
         self.inline_policy_list.append(policy)
+
 
     def append_group(self, group):
         self.groups.append(group)
 
+
     def set_arn(self, arn):
         self.arn = arn
 
+
     def return_arn(self):
         return self.arn
-
 
 
     def do_aws_checks(self, known_aws_admin_policies, known_aws_admin_groups):
@@ -172,7 +193,5 @@ class AwsAccount(Account):
 
 class AzureAccount(Account):
 
-    def __init__(self, args, config, logging):
-        self.args = args
-        self.config = config
-        self.logging = logging
+    def do_azure_checks(self):
+        pass
