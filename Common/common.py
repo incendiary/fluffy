@@ -2,11 +2,11 @@ __author__ = 'adz'
 import argparse
 import logging
 import ConfigParser
-import datetime
 import os
-from os import environ
 from beeprint import pp
-from datetime import timedelta
+from datetime import timedelta, datetime
+import pytz
+from os import environ
 
 def create_dir_if_not_exists(directory):
     if not os.path.exists(directory):
@@ -56,11 +56,18 @@ def loggingobject(args):
     return logging
 
 
-def comparetwodates(date1, date2, deltainseconds):
+def compare_two_dates(date1, date2, deltainseconds):
+    #date 1 = now, date 2 = then for example
     if (date1 - date2) > timedelta(seconds=deltainseconds):
         return True
     else:
         return False
+
+def compare_date_to_now(date, deltainseconds):
+    utc = pytz.UTC
+    current = datetime.now()
+    current_utc = pytz.utc.localize(current)
+    return compare_two_dates(current_utc, date, deltainseconds)
 
 
 def config_parser_rename_section(config, section_from, section_to, destructive=False):
@@ -82,7 +89,7 @@ def inital_setup():
     parser.add_argument('--log', '-l', help="any log dir? defaults to logs", required=False, default='logs')
 
     parser.add_argument('--logname', '-lf', help="log file name defaults too: %s.<date>.log", default="%s.log"
-                        % (datetime.datetime.now().strftime("%Y-%m-%d_%H_%M_%S")))
+                        % (datetime.now().strftime("%Y-%m-%d_%H_%M_%S")))
 
     parser.add_argument('--az', '-az', help="Want me to look at azure?", required=False, default=False, type=str2bool)
     parser.add_argument('--aws', '-aws', help="Want me to look at aws?", required=False, default=False, type=str2bool)
@@ -120,5 +127,8 @@ def inital_setup():
             config_parser_rename_section(config, 'default', 'awscredentials', destructive=True)
         else:
             config.read([os.path.expanduser(args.cfg)])
+
+
+
 
     return logging, args, config

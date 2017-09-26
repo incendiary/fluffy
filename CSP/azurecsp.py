@@ -6,78 +6,7 @@ from azure.common.credentials import ServicePrincipalCredentials
 import adal
 import os
 import json
-from Classes.accountclass import AzureAccount
-
-def authenticate_device_code(client):
-    """
-    Authenticate the end-user using device auth.
-    """
-    authority_host_uri = 'https://login.microsoftonline.com'
-    tenant = client['tenantId']
-    authority_uri = authority_host_uri + '/' + tenant
-    resource_uri = 'https://management.core.windows.net/'
-    client_id = client['clientId']
-
-    context = adal.AuthenticationContext(authority_uri, api_version=None)
-    code = context.acquire_user_code(resource_uri, client_id)
-    print(code['message'])
-    mgmt_token = context.acquire_token_with_device_code(resource_uri, code, client_id)
-    credentials = AADTokenCredentials(mgmt_token, client_id)
-
-    return credentials
-
-def authenticate_client_key(client):
-    """
-    Authenticate using service principal w/ key.
-    """
-    authority_host_uri = 'https://login.microsoftonline.com'
-    tenant = client['tenantId']
-    authority_uri = authority_host_uri + '/' + tenant
-    resource_uri = 'https://management.core.windows.net/'
-    client_id = client['clientId']
-    client_secret = client['clientSecret']
-
-    context = adal.AuthenticationContext(authority_uri, api_version=None)
-    mgmt_token = context.acquire_token_with_client_credentials(resource_uri, client_id, client_secret)
-    credentials = AADTokenCredentials(mgmt_token, client_id)
-
-    return credentials
-
-def azure_application_list(graphrbac_client, this_account):
-    for application in graphrbac_client.applications.list():
-        print application
-        print application.app_id
-        try:
-            for key in graphrbac_client.applications.list_password_credentials(
-                    application_object_id=application.object_id):
-                print key
-        except models.graph_error.GraphErrorException as e:
-            print "nokey?"
-
-def azure_group_list(graphrbac_client, this_account):
-    for group in graphrbac_client.groups.list():
-
-        for AADObject in graphrbac_client.groups.get_group_members(object_id=group.object_id):
-            print AADObject
-
-def azure_account_list(graphrbac_client, this_account):
-    for user in graphrbac_client.users.list():
-        print user
-        try:
-            groups = graphrbac_client.users.get_member_groups(object_id=user.object_id,
-                                                              security_enabled_only=True)
-            print type(groups)
-        except AttributeError as e:
-            print "no group"
-
-def azure_client(credentials, client_dict):
-    from azure.graphrbac import GraphRbacManagementClient
-
-    graphrbac_client = GraphRbacManagementClient(
-        credentials,
-        client_dict['tenantId']
-    )
-    return graphrbac_client
+from Classes.accountclass import AzureAccount, ApiAccessKey
 
 
 def azure_credentials(config):
@@ -119,16 +48,105 @@ def azure_credentials(config):
     return credentials, client_dict
 
 
+def authenticate_device_code(client):
+    """
+    Authenticate the end-user using device auth.
+    """
+    authority_host_uri = 'https://login.microsoftonline.com'
+    tenant = client['tenantId']
+    authority_uri = authority_host_uri + '/' + tenant
+    resource_uri = 'https://management.core.windows.net/'
+    client_id = client['clientId']
+
+    context = adal.AuthenticationContext(authority_uri, api_version=None)
+    code = context.acquire_user_code(resource_uri, client_id)
+    print(code['message'])
+    mgmt_token = context.acquire_token_with_device_code(resource_uri, code, client_id)
+    credentials = AADTokenCredentials(mgmt_token, client_id)
+
+    return credentials
+
+def authenticate_client_key(client):
+    """
+    Authenticate using service principal w/ key.
+    """
+    authority_host_uri = 'https://login.microsoftonline.com'
+    tenant = client['tenantId']
+    authority_uri = authority_host_uri + '/' + tenant
+    resource_uri = 'https://management.core.windows.net/'
+    client_id = client['clientId']
+    client_secret = client['clientSecret']
+
+    context = adal.AuthenticationContext(authority_uri, api_version=None)
+    mgmt_token = context.acquire_token_with_client_credentials(resource_uri, client_id, client_secret)
+    credentials = AADTokenCredentials(mgmt_token, client_id)
+
+    return credentials
+
+def azure_application_list(graphrbac_client, logging, config):
+    for application in graphrbac_client.applications.list():
+        logging.info('[*] Creating azure account object id: %s' % (application.app_id))
+        this_account = AzureAccount(application.app_id)
+        keys = []
+
+        try:
+            for key in graphrbac_client.applications.list_password_credentials(
+                    application_object_id=application.object_id):
+
+
+                logging.info('[*] Creating azure key object id: %s' % (key.key_id))
+                this_key = ApiAccessKey(key.key_id, key.start_date, application.app_id, config)
+
+                this_account.appended_api_access_key(this_key)
+
+
+
+        except models.graph_error.GraphErrorException as e:
+            print "nokey?"
+
+def azure_group_list(graphrbac_client):
+    for group in graphrbac_client.groups.list():
+
+        for AADObject in graphrbac_client.groups.get_group_members(object_id=group.object_id):
+            print AADObject
+
+def azure_account_list(graphrbac_client):
+    for user in graphrbac_client.users.list():
+        print user
+        try:
+            groups = graphrbac_client.users.get_member_groups(object_id=user.object_id,
+                                                              security_enabled_only=True)
+            print type(groups)
+        except AttributeError as e:
+            print "no group"
+
+def azure_client(credentials, client_dict):
+    from azure.graphrbac import GraphRbacManagementClient
+
+    graphrbac_client = GraphRbacManagementClient(
+        credentials,
+        client_dict['tenantId']
+    )
+    return graphrbac_client
+
+
+
+
 def azure_checks(graphrbac_client, args, config, logging):
 
-    logging.info('[*] Creating Azure Account Object')
-    this_account = AzureAccount(args, config, logging)
+    accounts = []
 
     logging.info('[*] Performing Checks on Azure\n[i] Application Listing')
-    azure_application_list(graphrbac_client, this_account)
+    azure_application_list(graphrbac_client, logging, config)
+
+    exit()
     logging.info('[i] Group listing')
-    azure_group_list(graphrbac_client, this_account)
+    azure_group_list(graphrbac_client)
+
+
     logging.info('[i] User listing')
-    azure_account_list(graphrbac_client, this_account)
+    azure_account_list(graphrbac_client)
+
+
     logging.info('[*] Azure Checks complete')
     return logging

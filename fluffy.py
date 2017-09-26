@@ -2,8 +2,7 @@ from Common.common import inital_setup, get_list_from_config_parser
 import getpass
 import sys
 from beeprint import pp
-import pytz
-from datetime import datetime
+
 import os
 import json
 ## Other required imports
@@ -25,9 +24,7 @@ from Classes.accountclass import AwsAccount, ApiAccessKey
 
 if __name__ == "__main__":
     logging, args, config = inital_setup()
-    utc = pytz.UTC
-    current = datetime.now()
-    current_utc = pytz.utc.localize(current)
+
 
     last_key_used_delta = config.getint('apikeys', 'lastused')
     longest_key_unused_delta = config.getint('apikeys', 'unused')
