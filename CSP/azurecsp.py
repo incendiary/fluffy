@@ -6,8 +6,9 @@ from azure.common.credentials import ServicePrincipalCredentials
 import adal
 import os
 import json
+import sys
 from Classes.accountclass import AzureAccount, ApiAccessKey
-
+from beeprint import pp
 
 def azure_credentials(config):
 
@@ -84,25 +85,27 @@ def authenticate_client_key(client):
     return credentials
 
 def azure_application_list(graphrbac_client, logging, config):
+    accounts = []
     for application in graphrbac_client.applications.list():
         logging.info('[*] Creating azure account object id: %s' % (application.app_id))
         this_account = AzureAccount(application.app_id)
         keys = []
-
         try:
             for key in graphrbac_client.applications.list_password_credentials(
                     application_object_id=application.object_id):
 
-
                 logging.info('[*] Creating azure key object id: %s' % (key.key_id))
                 this_key = ApiAccessKey(key.key_id, key.start_date, application.app_id, config)
-
                 this_account.appended_api_access_key(this_key)
 
-
-
         except models.graph_error.GraphErrorException as e:
-            print "nokey?"
+            print logging.critical('[E] Error looking up key info')
+            print logging.critical('[E] %s' % e)
+            sys.exit()
+
+        accounts.append(this_account)
+
+    return accounts
 
 def azure_group_list(graphrbac_client):
     for group in graphrbac_client.groups.list():
@@ -137,7 +140,8 @@ def azure_checks(graphrbac_client, args, config, logging):
     accounts = []
 
     logging.info('[*] Performing Checks on Azure\n[i] Application Listing')
-    azure_application_list(graphrbac_client, logging, config)
+    for account in azure_application_list(graphrbac_client, logging, config):
+        pp(account)
 
     exit()
     logging.info('[i] Group listing')

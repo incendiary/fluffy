@@ -2,12 +2,10 @@ from Common.common import inital_setup, get_list_from_config_parser
 import getpass
 import sys
 from beeprint import pp
-
 import os
 import json
 ## Other required imports
 import uuid
-
 
 
 #our Azure stuff
@@ -17,9 +15,6 @@ from CSP.azurecsp import azure_checks, azure_client, azure_credentials
 from Classes.accountclass import AwsAccount, ApiAccessKey
 
 #our AWS stuff
-
-
-
 
 
 if __name__ == "__main__":
