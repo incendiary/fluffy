@@ -10,6 +10,15 @@ import sys
 from Classes.accountclass import AzureAccount, ApiAccessKey
 from beeprint import pp
 
+def create_client_dictionary(clientId, clientSecret, tennantId, activeDirectoryGraphResourceId):
+
+    client_dict = {'clientId': clientId,
+                   "clientSecret": clientSecret,
+                   "tenantId": tennantId,
+                   "activeDirectoryGraphResourceId": activeDirectoryGraphResourceId
+                   }
+    return client_dict
+
 def azure_credentials(config):
 
     if config.get('azure', 'azureauthenvvar'):
@@ -20,30 +29,29 @@ def azure_credentials(config):
             with open(parameters_file, 'r') as f:
                 parameters = f.read()
             auth_parameters = json.loads(parameters)
-            client_dict = {'clientId': auth_parameters.get('clientId').encode('ascii'),
-                           "clientSecret": auth_parameters.get('clientSecret').encode('ascii'),
-                           "tenantId": auth_parameters.get('tenantId').encode('ascii'),
-                           "activeDirectoryGraphResourceId": auth_parameters.get('activeDirectoryGraphResourceId').encode(
-                               'ascii')
-                           }
+            client_dict = create_client_dictionary(auth_parameters.get('clientId').encode('ascii'),
+                                                  auth_parameters.get('clientSecret').encode('ascii'),
+                                                  auth_parameters.get('tenantId').encode('ascii'),
+                                                  auth_parameters.get('activeDirectoryGraphResourceId').encode('ascii')
+                                                  )
+
         else:
             raise ValueError('Please provide parameter file with account information.')
 
     elif config.get('azure', 'clientId') and config.get('azure', 'clientSecret') and config.get('azure', 'tenantId') and \
             config.get('azure', 'activeDirectoryGraphResourceId'):
         #here - we  have config info to use
-
-        client_dict = {'clientId': config.get('azure', 'clientId'),
-                       "clientSecret": config.get('azure', 'clientSecret'),
-                       "tenantId": config.get('azure', 'tenantId'),
-                       "activeDirectoryGraphResourceId": config.get('azure', 'activeDirectoryGraphResourceId'),
-                       }
+        client_dict = create_client_dictionary(config.get('azure', 'clientId'),
+                                              config.get('azure', 'clientSecret'),
+                                              config.get('azure', 'tenantId'),
+                                              config.get('azure', 'activeDirectoryGraphResourceId')
+                                              )
 
     credentials = ServicePrincipalCredentials(
-        client_id=client_dict['clientId'],
-        secret=client_dict['clientSecret'],
-        tenant=client_dict['tenantId'],
-        resource=client_dict['activeDirectoryGraphResourceId']
+        client_id = client_dict['clientId'],
+        secret = client_dict['clientSecret'],
+        tenant = client_dict['tenantId'],
+        resource = client_dict['activeDirectoryGraphResourceId']
     )
 
     return credentials, client_dict

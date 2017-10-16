@@ -6,6 +6,7 @@ import os
 import json
 ## Other required imports
 import uuid
+import msrest.exceptions as msrestexecptions
 
 
 #our Azure stuff
@@ -26,7 +27,12 @@ if __name__ == "__main__":
 
     #Azure
     if args.az:
-        credentials, client_dict = azure_credentials(config)
+        try:
+            credentials, client_dict = azure_credentials(config)
+        except msrestexecptions.AuthenticationError as e:
+            logging.critical('[E] Looks like some sort of connection error')
+            logging.critical('[E] %s' % e)
+            sys.exit()
         graphrbac_client = azure_client(credentials, client_dict)
         azure_checks(graphrbac_client, args, config, logging)
 

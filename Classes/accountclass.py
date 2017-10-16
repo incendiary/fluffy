@@ -14,14 +14,15 @@ class ApiAccessKey(object):
         self.user = user
         self.config = config
         self.createdate = createdate
-        self.expiry = False
-        self.api_access_key_unused = False
-        self.api_access_key_last_used_too_long = False
-        self.api_key_too_old = False
-        self.set_create_date(createdate)
+        self.expiry = None
+        self.api_access_key_unused = None
+        self.api_access_key_last_used_too_long = None
+        self.api_key_too_old = None
+        self.set_create_date()
 
-    def set_create_date(self, createdate):
+    def set_create_date(self):
         self.api_key_too_old = compare_date_to_now(self.createdate, self.config.getint('apikeys', 'maxage'))
+
 
     def set_last_used(self, access_key_last_used_date, api_access_key_last_used_too_long):
         self.api_access_key_last_used = access_key_last_used_date
@@ -57,12 +58,12 @@ class Account(object):
         # API keys associated with account
         self.api_access_keys_list = []
         # Inline Policies used by AWS - Maybe Azure equivalent? TBC
-        self.inline_enabled = False
+        self.inline_enabled = None
         # does the account have MFA enabled
-        self.mfa_enabled = False
-        self.administrative = False
-        self.group_membership_enabled = False
-        self.administrative_not_mfa = False
+        self.mfa_enabled = None
+        self.administrative = None
+        self.group_membership_enabled = None
+        self.administrative_not_mfa = None
         self.groups = []
         self.last_used = None
         self.create_date = None

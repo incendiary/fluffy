@@ -1,5 +1,6 @@
 import os
 import jinja2
+import json
 
 def report_inline_user():
     pass
@@ -54,11 +55,11 @@ def createreport(userlist):
 
 
     maintemplateVars = {"title": "Fluffy Output",
-                    "description": "Hopefully simple output",
-                    "keytablecontents": keytablecontent,
-                    "inlineusers": inlineusers,
-                    "nonmfausers": nonmfausers,
-                    }
+                        "description": "Hopefully simple output",
+                        "keytablecontents": keytablecontent,
+                        "inlineusers": inlineusers,
+                        "nonmfausers": nonmfausers,
+                        }
 
     with open("Output/index.html", "wb") as fh:
         fh.write(maintemplate.render(maintemplateVars))
